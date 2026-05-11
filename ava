@@ -1,79 +1,89 @@
--- COPY AVATAR BY USERNAME (UNIVERSAL)
+-- COPY AVATAR R6 & R15 | UNIVERSAL
 -- Client-side | Executor Friendly
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CopyAvatarGUI"
-ScreenGui.Parent = game.CoreGui
-
-local Frame = Instance.new("Frame")
-Frame.Parent = ScreenGui
-Frame.Size = UDim2.new(0, 300, 0, 180)
-Frame.Position = UDim2.new(0.5, -150, 0.5, -90)
-Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
-
-local UICorner = Instance.new("UICorner", Frame)
-UICorner.CornerRadius = UDim.new(0, 12)
-
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundTransparency = 1
-Title.Text = "COPY AVATAR"
-Title.TextColor3 = Color3.fromRGB(0, 255, 170)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
-
-local UsernameBox = Instance.new("TextBox", Frame)
-UsernameBox.PlaceholderText = "Masukkan Username"
-UsernameBox.Size = UDim2.new(0.9, 0, 0, 40)
-UsernameBox.Position = UDim2.new(0.05, 0, 0.3, 0)
-UsernameBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-UsernameBox.TextColor3 = Color3.new(1,1,1)
-UsernameBox.Font = Enum.Font.Gotham
-UsernameBox.TextSize = 14
-UsernameBox.ClearTextOnFocus = false
-Instance.new("UICorner", UsernameBox)
-
-local CopyButton = Instance.new("TextButton", Frame)
-CopyButton.Size = UDim2.new(0.9, 0, 0, 40)
-CopyButton.Position = UDim2.new(0.05, 0, 0.6, 0)
-CopyButton.Text = "COPY AVATAR"
-CopyButton.BackgroundColor3 = Color3.fromRGB(0, 170, 120)
-CopyButton.TextColor3 = Color3.new(1,1,1)
-CopyButton.Font = Enum.Font.GothamBold
-CopyButton.TextSize = 14
-Instance.new("UICorner", CopyButton)
-
--- FUNCTION COPY AVATAR
-CopyButton.MouseButton1Click:Connect(function()
-    local username = UsernameBox.Text
+local function copyAvatar(username)
     if username == "" then return end
 
     local success, userId = pcall(function()
         return Players:GetUserIdFromNameAsync(username)
     end)
     if not success then
-        CopyButton.Text = "USERNAME TIDAK DITEMUKAN"
-        wait(1.5)
-        CopyButton.Text = "COPY AVATAR"
+        warn("Username tidak ditemukan")
         return
     end
 
-    local description = Players:GetHumanoidDescriptionFromUserId(userId)
+    local desc = Players:GetHumanoidDescriptionFromUserId(userId)
 
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    local function apply(character)
+        local humanoid = character:WaitForChild("Humanoid", 10)
+        if not humanoid then return end
 
-    if humanoid then
-        humanoid:ApplyDescription(description)
-        CopyButton.Text = "BERHASIL!"
-        wait(1.5)
-        CopyButton.Text = "COPY AVATAR"
+        -- DETECT RIG
+        if humanoid.RigType == Enum.HumanoidRigType.R6 then
+            desc.LeftArm = 0
+            desc.RightArm = 0
+            desc.LeftLeg = 0
+            desc.RightLeg = 0
+            desc.Torso = 0
+        end
+
+        humanoid:ApplyDescriptionReset(desc)
     end
+
+    if LocalPlayer.Character then
+        apply(LocalPlayer.Character)
+    end
+
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(1)
+        apply(char)
+    end)
+end
+
+-- ===== GUI =====
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "CopyAvatarR6R15"
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 160)
+frame.Position = UDim2.new(0.5, -150, 0.5, -80)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,35)
+title.BackgroundTransparency = 1
+title.Text = "COPY AVATAR R6 / R15"
+title.TextColor3 = Color3.fromRGB(0,255,170)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+
+local box = Instance.new("TextBox", frame)
+box.Size = UDim2.new(0.9,0,0,35)
+box.Position = UDim2.new(0.05,0,0.35,0)
+box.PlaceholderText = "Username Roblox"
+box.Text = ""
+box.BackgroundColor3 = Color3.fromRGB(30,30,30)
+box.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", box)
+
+local btn = Instance.new("TextButton", frame)
+btn.Size = UDim2.new(0.9,0,0,35)
+btn.Position = UDim2.new(0.05,0,0.65,0)
+btn.Text = "COPY AVATAR"
+btn.BackgroundColor3 = Color3.fromRGB(0,170,120)
+btn.TextColor3 = Color3.new(1,1,1)
+btn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", btn)
+
+btn.MouseButton1Click:Connect(function()
+    btn.Text = "LOADING..."
+    copyAvatar(box.Text)
+    task.wait(1)
+    btn.Text = "COPY AVATAR"
 end)
